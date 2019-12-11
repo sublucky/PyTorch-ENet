@@ -145,10 +145,10 @@ def train(train_loader, val_loader, class_weights, class_encoding):
     model = ENet(num_classes).to(device)
     # Check if the network architecture is correct
     if torch.cuda.device_count() > 1:
-	print(">>>Use mult GPU for trainning>>>")
+        print(">>>Use mult GPU for trainning>>>")
         gpu_num = torch.cuda.device_count()
         gpu_list = list(range(gpu_num))
-	model=nn.DataParallel(model,device_ids=gpu_list)
+        model=nn.DataParallel(model,device_ids=gpu_list)
     print(model)
 
     # We are going to use the CrossEntropyLoss loss function as it's most
