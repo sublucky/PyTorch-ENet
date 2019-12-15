@@ -60,10 +60,15 @@ def save_checkpoint(model, optimizer, epoch, miou, args):
 
     """
     name = args.name
-    save_dir = args.save_dir
+    
+    save_dir =  os.path.join(args.save_dir,"epoch{0}".format(epoch) )
 
-    assert os.path.isdir(
-        save_dir), "The directory \"{0}\" doesn't exist.".format(save_dir)
+    if not os.path.isdir(save_dir):
+        "The directory \"{0}\" doesn't exist.Creating".format(save_dir)
+        os.makedirs(save_dir)
+
+    # assert os.path.isdir(
+    #     save_dir), "The directory \"{0}\" doesn't exist.".format(save_dir)
 
     # Save model
     model_path = os.path.join(save_dir, name)

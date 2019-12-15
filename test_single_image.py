@@ -23,6 +23,7 @@ from argparse import ArgumentParser
 import  copy
 import matplotlib.pyplot as plt
 import collections   
+from visdom import Visdom
 
 COLOR_ECODING_DICT = collections.OrderedDict() 
 
@@ -56,8 +57,8 @@ def get_arguments():
         "--model-path",
         "-m",
         type=str,
-        default='./save/ENet_Cityscapes/120Eproch',
-        help="The model path. Default: ./save/ENet_Cityscapes/120Eproch")
+        default='./save/epoch100',
+        help="The model path. Default: ./save/epoch100")
     # Image path
     parser.add_argument(
         "--image-path",

@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -17,9 +18,14 @@ from metric.iou import IoU
 from args import get_arguments
 from data.utils import enet_weighing, median_freq_balancing
 import utils
+from visdom import Visdom
 
 # Get the arguments
 args = get_arguments()
+viz = Visdom(env='enet_training',server='http://127.0.0.1', port=8097)
+assert viz.check_connection()
+
+
 
 device = torch.device(args.device)
 
@@ -138,6 +144,7 @@ def load_dataset(dataset):
 
 def train(train_loader, val_loader, class_weights, class_encoding):
     print("\nTraining...\n")
+    vis_calling_times = 0
 
     num_classes = len(class_encoding)
 
@@ -196,15 +203,15 @@ def train(train_loader, val_loader, class_weights, class_encoding):
         print(">>>> [Epoch: {0:d}] Avg. loss: {1:.4f} | Mean IoU: {2:.4f}".
               format(epoch, epoch_loss, miou))
 
+        print(">>>> [Epoch: {0:d}] Validation".format(epoch))
+
+        loss, (iou, miou) = val.run_epoch(args.print_step)
+
+        print(">>>> [Epoch: {0:d}] Avg. loss: {1:.4f} | Mean IoU: {2:.4f}".
+                format(epoch, loss, miou))
+
         if (epoch + 1) % 10 == 0 or epoch + 1 == args.epochs:
-            print(">>>> [Epoch: {0:d}] Validation".format(epoch))
-
-            loss, (iou, miou) = val.run_epoch(args.print_step)
-
-            print(">>>> [Epoch: {0:d}] Avg. loss: {1:.4f} | Mean IoU: {2:.4f}".
-                  format(epoch, loss, miou))
-
-            # Print per class IoU on last epoch or if best iou
+                # Print per class IoU on last epoch or if best iou
             if epoch + 1 == args.epochs or miou > best_miou:
                 for key, class_iou in zip(class_encoding.keys(), iou):
                     print("{0}: {1:.4f}".format(key, class_iou))
@@ -214,7 +221,32 @@ def train(train_loader, val_loader, class_weights, class_encoding):
                 print("\nBest model thus far. Saving...\n")
                 best_miou = miou
                 utils.save_checkpoint(model, optimizer, epoch + 1, best_miou,
-                                      args)
+                                        args)
+        
+        if vis_calling_times == 0:
+            # set to false
+            vis_calling_times = 1
+            win = viz.line( X=np.column_stack((np.array(epoch),np.array(epoch))),
+                    Y=np.column_stack((np.array(epoch_loss),np.array(loss))),
+                    opts=dict(legend=['training loss','eval loss'],title='loss'))
+        else:
+            viz.line(   X=np.column_stack((np.array(epoch),np.array(epoch))),
+                        Y=np.column_stack((np.array(epoch_loss),np.array(loss))),
+                        win=win,#win要保持一致
+                        update='append')
+
+        # if vis_first_create:
+        #     vis_first_create = false
+
+        #     win = viz.line( X=np.column_stack((np.array(epoch),np.array(epoch))),
+        #                     Y=np.column_stack((np.array(epoch_loss),np.array(loss))),
+        #                     name=
+        #                     opts=dict(title='loss'))
+        # else:
+        #     viz.line(   X=np.column_stack((np.array(epoch),np.array(epoch))),
+        #                 Y=np.column_stack((np.array(epoch_loss),np.array(loss))),
+        #                 win=win,#win要保持一致
+        #                 update='append')
 
     return model
 
